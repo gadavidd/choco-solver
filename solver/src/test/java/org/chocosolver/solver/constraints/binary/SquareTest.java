@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.constraints.binary;
@@ -63,8 +60,8 @@ public class SquareTest {
         solver.setSearch(Search.randomSearch(ArrayUtils.append(x,x2), 0));
         while (solver.solve()) ;
         assertEquals(solver.getSolutionCount(), 184320);
-        assertEquals(solver.getFailCount(), 11417);
-        assertEquals(solver.getNodeCount(), 380056);
+        assertEquals(solver.getFailCount(), 11383);
+        assertEquals(solver.getNodeCount(), 380022);
     }
 
     @Test(groups = "10s", timeOut = 60000)

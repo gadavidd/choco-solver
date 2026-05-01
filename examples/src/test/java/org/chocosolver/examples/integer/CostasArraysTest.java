@@ -1,10 +1,7 @@
 /*
  * This file is part of examples, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.examples.integer;
@@ -36,7 +33,7 @@ public class CostasArraysTest {
 		CostasArrays ca = new CostasArrays();
 		ca.execute();
 		Assert.assertEquals(ca.getModel().getSolver().getSolutionCount(), 1);
-		Assert.assertEquals(ca.getModel().getSolver().getNodeCount(), 6539);
+		Assert.assertEquals(ca.getModel().getSolver().getNodeCount(), 8_987);
 	}
 
 	@Test(groups = "10s", timeOut = 60000)

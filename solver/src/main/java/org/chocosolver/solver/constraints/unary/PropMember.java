@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.constraints.unary;
@@ -64,7 +61,8 @@ public class PropMember extends Propagator<IntVar> implements UpdatablePropagato
     private static boolean enforce(IntVar var, IntIterableRangeSet fset, Propagator<IntVar> prop) throws ContradictionException {
         if (prop.lcg()) {
             boolean rem = false;
-            for (int i : var) {
+            int varUB = var.getUB();
+            for (int i = var.getLB(); i <= varUB; i = var.nextValue(i)) {
                 if (fset.contains(i)) continue;
                 rem |= var.removeValue(i, prop, Reason.undef());
             }

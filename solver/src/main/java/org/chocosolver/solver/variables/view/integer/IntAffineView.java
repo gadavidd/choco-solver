@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.variables.view.integer;
@@ -74,6 +71,7 @@ public final class IntAffineView<I extends IntVar> extends IntView<I> {
     @Override
     public boolean removeValue(int value, ICause cause, Reason reason) throws ContradictionException {
         assert cause != null;
+        reason = cause.manageReification().apply(reason); // to deal with reification of the earliest cause
         int inf = getLB();
         int sup = getUB();
         if (inf > value || value > sup) return false;
@@ -106,6 +104,7 @@ public final class IntAffineView<I extends IntVar> extends IntView<I> {
     @Override
     public boolean instantiateTo(int value, ICause cause, Reason reason) throws ContradictionException {
         assert cause != null;
+        reason = cause.manageReification().apply(reason); // to deal with reification of the earliest cause
         value -= b;
         if (a > 1) {
             if ((value % a) != 0) {
@@ -129,6 +128,7 @@ public final class IntAffineView<I extends IntVar> extends IntView<I> {
     @Override
     public boolean updateLowerBound(int value, ICause cause, Reason reason) throws ContradictionException {
         assert cause != null;
+        reason = cause.manageReification().apply(reason); // to deal with reification of the earliest cause
         int old = this.getLB();
         if (old >= value) return false;
         value--;
@@ -156,6 +156,7 @@ public final class IntAffineView<I extends IntVar> extends IntView<I> {
     @Override
     public boolean updateUpperBound(int value, ICause cause, Reason reason) throws ContradictionException {
         assert cause != null;
+        reason = cause.manageReification().apply(reason); // to deal with reification of the earliest cause
         int old = this.getUB();
         if (old <= value) return false;
         value -= b;

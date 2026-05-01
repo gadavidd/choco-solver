@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.search.strategy.selectors.variables;
@@ -40,7 +37,7 @@ public class PickOnDom<V extends Variable> extends AbstractCriterionBasedVariabl
     private final ArrayList<Variable> lVars;
 
     public PickOnDom(V[] vars) {
-        this(vars, 32);
+        this(vars, 20);
     }
 
     public PickOnDom(V[] vars, int flushRate) {

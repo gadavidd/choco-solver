@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.constraints.extension;
@@ -13,6 +10,7 @@ import org.chocosolver.solver.Settings;
 import org.chocosolver.solver.constraints.Operator;
 import org.chocosolver.solver.exception.SolverException;
 import org.chocosolver.solver.variables.IntVar;
+import org.chocosolver.util.tools.ArrayUtils;
 
 import java.util.Random;
 
@@ -70,6 +68,63 @@ public class TuplesFactory {
     }
 
     /**
+     * A method that generates all tuples from a set of variables and stores (and returns) the valid tuples wrt to the <code>evaluator</code>.
+     * One may keep in mind that tuples generation directly depends on the product of domain cardinality (without considering the result variable), but also on the algorithm defines in the filter.
+     * Note that result variable should be in first position
+     *
+     * @param result a variable
+     * @param evaluator tuple evaluator
+     * @param vars concerned variables without the result
+     * @return the valid tuples
+     */
+    public static Tuples generateTuplesWithResult(IntVar result, TupleEvaluator evaluator, IntVar... vars) {
+        return generateTuplesWithResult(result, TupleValidator.TRUE, evaluator, vars);
+    }
+
+    /**
+     * A method that generates all tuples from a set of variables and stores (and returns) the valid tuples wrt to the <code>evaluator</code>.
+     * Includes a filter to prevent some forbidden operations (e.g. dividing by 0)
+     * One may keep in mind that tuples generation directly depends on the product of domain cardinality (without considering the result variable), but also on the algorithm defines in the filter.
+     * Note that result variable should be in first position
+     *
+     * @param result a variable
+     * @param filter validator called before the tuple evaluator
+     * @param evaluator tuple evaluator
+     * @param vars concerned variables without the result
+     * @return the valid tuples
+     */
+    public static Tuples generateTuplesWithResult(IntVar result, TupleValidator filter, TupleEvaluator evaluator, IntVar... vars) {
+        Tuples tuples = new Tuples(true);
+        int n = vars.length;
+        int[] cvalue = new int[n];
+        int[] tuple = new int[n];
+        for (int j = 0; j < n; j++) {
+            tuple[j] = cvalue[j] = vars[j].getLB();
+        }
+        while (true) {
+            if (filter.valid(tuple)) {
+                int value = evaluator.compute(tuple);
+                if (result.contains(value)) {
+                    int[] tupleWithResult = new int[n + 1];
+                    System.arraycopy(tuple, 0, tupleWithResult, 1, n);
+                    tupleWithResult[0] = value;
+                    tuples.add(tupleWithResult);
+                }
+            }
+            int j;
+            for (j = 0; j < n; j++) {
+                int v = tuple[j] = cvalue[j] = vars[j].nextValue(cvalue[j]);
+                if (v < Integer.MAX_VALUE) {
+                    break;
+                }
+                tuple[j] = cvalue[j] = vars[j].getLB();
+            }
+            if (j == n) break;
+        }
+        return tuples;
+    }
+
+    /**
      * A method that generates all tuples from a set of variables and stores (and returns) the valid tuples wrt to the <code>filter</code>.
      * One may keep in mind that tuples generation directly depends on the product of domain cardinality, but also on the algorithm defines in the filter.
      *
@@ -103,6 +158,70 @@ public class TuplesFactory {
     }
 
     /**
+     * A method that generates all tuples from a set of variables and stores (and returns) the valid tuples wrt to the <code>filter</code>.
+     * One may keep in mind that tuples generation directly depends on the product of domain cardinality, but also on the algorithm defines in the filter.
+     *
+     * @param filter   tuple validator
+     * @param vars     concerned variables
+     * @return two Tuples objects, the first one contains the valid tuples and the second one contains the invalid tuples
+     */
+    public static Tuples[] generateTuples(TupleValidator filter, IntVar... vars) {
+        Tuples[] tuples = new Tuples[2];
+        tuples[0] = new Tuples(true);
+        tuples[1] = new Tuples(false);
+        int n = vars.length;
+        int[] cvalue = new int[n];
+        int[] t = new int[n];
+        for (int j = 0; j < n; j++) {
+            t[j] = cvalue[j] = vars[j].getLB();
+        }
+        while (true) {
+            if (filter.valid(t)) {
+                tuples[0].add(t.clone());
+            } else {
+                tuples[1].add(t.clone());
+            }
+            int j;
+            for (j = 0; j < n; j++) {
+                int v = t[j] = cvalue[j] = vars[j].nextValue(cvalue[j]);
+                if (v < Integer.MAX_VALUE) {
+                    break;
+                }
+                t[j] = cvalue[j] = vars[j].getLB();
+            }
+            if (j == n) break;
+        }
+        return tuples;
+
+    }
+
+    /**
+     * Randomly generate <i>n</i> tuples from <i>vars</i> and return the number of tuples that are valid according to <i>filter</i>
+     * as the ratio of valid tuples over the total number of tuples.
+     * @param n number of tuples to generate
+     * @param filter tuple validator
+     * @param vars concerned variables
+     * @return the ratio of valid tuples over the total number of tuples
+     */
+    public static double sample(int n, Random rnd, TupleValidator filter, IntVar... vars){
+        int valid = 0;
+        for (int i = 0; i < n; i++) {
+            int[] t = new int[vars.length];
+            for (int j = 0; j < vars.length; j++) {
+                int v = vars[j].getLB() + rnd.nextInt(vars[j].getUB() - vars[j].getLB() + 1);
+                while(!vars[j].contains(v)){
+                    v = vars[j].getLB() + rnd.nextInt(vars[j].getUB() - vars[j].getLB() + 1);
+                }
+                t[j] = v;
+            }
+            if (filter.valid(t)) {
+                valid++;
+            }
+        }
+        return ((double) valid) / n;
+    }
+
+    /**
      * A method that randomly generates tuples from a set of variables.
      *
      * @param proba  probability to keep a tuple in Tuples (0 < proba < 1)
@@ -120,7 +239,7 @@ public class TuplesFactory {
      * </p>
      */
     public static Tuples randomTuples(final double proba, final Random random, IntVar... vars) {
-        return generateTuples(vs -> random.nextDouble() < proba, true,vars);
+        return generateTuples(vs -> random.nextDouble() < proba, true, vars);
     }
 
     // BEWARE: PLEASE, keep signatures sorted by increasing arity and alphabetical order!!
@@ -213,12 +332,12 @@ public class TuplesFactory {
     }
 
     /**
-     * Generate valid tuples for minimum constraint: VAR1 % m = VAR2
+     * Generate valid tuples for minimum constraint: x % m = result
      *
      * @return a Tuples object, reserved for a table constraint
      */
-    public static Tuples modulo(IntVar VAR1, int m, IntVar VAR2) {
-        return generateTuples(values -> values[1] == values[0] % m, true, VAR1, VAR2);
+    public static Tuples modulo(IntVar result, IntVar x, int m) {
+        return generateTuplesWithResult(result, values -> values[0] % m, x);
     }
 
     /**
@@ -231,12 +350,12 @@ public class TuplesFactory {
     }
 
     /**
-     * Generate valid tuples for absolute constraint: VAR1  = VAR2^2
+     * Generate valid tuples for absolute constraint: result  = x^2
      *
      * @return a Tuples object, reserved for a table constraint
      */
-    public static Tuples square(IntVar VAR1, IntVar VAR2) {
-        return generateTuples(values -> values[0] == Math.pow(values[1], 2), true, VAR1, VAR2);
+    public static Tuples square(IntVar result, IntVar x) {
+        return generateTuplesWithResult(result, values -> (int) Math.pow(values[0], 2), x);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -244,12 +363,12 @@ public class TuplesFactory {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
-     * Generate valid tuples for euclidean division constraint: DIVIDEND / DIVISOR = RESULT, rounding towards 0
+     * Generate valid tuples for euclidean division constraint: dividend / divisor = result, rounding towards 0
      *
      * @return a Tuples object, reserved for a table constraint
      */
-    public static Tuples eucl_div(IntVar DIVIDEND, IntVar DIVISOR, IntVar RESULT) {
-        return generateTuples(values -> values[0] / values[1] == values[2], true, DIVIDEND, DIVISOR, RESULT);
+    public static Tuples eucl_div(IntVar result, IntVar dividend, IntVar divisor) {
+        return generateTuplesWithResult(result, TupleValidator.TRUE, values -> values[0] / values[1], dividend, divisor);
     }
 
     /**
@@ -271,12 +390,12 @@ public class TuplesFactory {
     }
 
     /**
-     * Generate valid tuples for minimum constraint: VAR1 % VAR2 = RES
+     * Generate valid tuples for minimum constraint: x % y = result
      *
      * @return a Tuples object, reserved for a table constraint
      */
-    public static Tuples modulo(IntVar VAR1, IntVar VAR2, IntVar RES) {
-        return generateTuples(values -> values[1] != 0 && values[2] == values[0] % values[1], true, VAR1, VAR2, RES);
+    public static Tuples modulo(IntVar result, IntVar x, IntVar y) {
+        return generateTuplesWithResult(result, values -> values[1] != 0, values -> values[0] % values[1], x, y);
     }
 
     /**
@@ -298,12 +417,12 @@ public class TuplesFactory {
     }
 
     /**
-     * Generate valid tuples for times constraint: VAR1 * VAR2 = RESULT
+     * Generate valid tuples for times constraint: x * y = result
      *
      * @return a Tuples object, reserved for a table constraint
      */
-    public static Tuples times(IntVar VAR1, IntVar VAR2, IntVar RESULT) {
-        return generateTuples(values -> values[0] * values[1] == values[2], true, VAR1, VAR2, RESULT);
+    public static Tuples times(IntVar result, IntVar x, IntVar y) {
+        return generateTuplesWithResult(result, values -> values[0] * values[1], x, y);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -497,6 +616,32 @@ public class TuplesFactory {
     public static boolean canBeTupled(IntVar... VARS) {
         Settings settings = VARS[0].getModel().getSettings();
         if (!settings.enableTableSubstitution()) {
+            return false;
+        }
+        long doms = 1;
+        for (int i = 0; i < VARS.length && doms < settings.getMaxTupleSizeForSubstitution(); i++) {
+            if (!VARS[i].hasEnumeratedDomain()) {
+                return false;
+            }
+            doms *= VARS[i].getDomainSize();
+        }
+        return (doms < settings.getMaxTupleSizeForSubstitution());
+    }
+
+    /**
+     * Check whether the intension constraint to extension constraint substitution is enabled and can be achieved
+     * Differs from canBeTupled in that the result variable is excluded from the search space estimate
+     *
+     * @param RESULT result variable
+     * @param VARS list of variables inducing combinations
+     * @return a boolean
+     */
+    public static boolean canBeTupledWithResult(IntVar RESULT, IntVar... VARS) {
+        Settings settings = RESULT.getModel().getSettings();
+        if (!settings.enableTableSubstitution()) {
+            return false;
+        }
+        if (!RESULT.hasEnumeratedDomain()) {
             return false;
         }
         long doms = 1;

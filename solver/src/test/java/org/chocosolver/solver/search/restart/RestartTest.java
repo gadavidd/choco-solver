@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.search.restart;
@@ -134,7 +131,8 @@ public class RestartTest {
         );
         while (solver.solve()) ;
         assertEquals(solver.getRestartCount(), 2);
-        assertEquals(solver.getSolutionCount(), 10);
+        assertEquals(solver.getSolutionCount(), 7);
+        assertEquals(solver.getObjectiveManager().getBestSolutionValue(), 55);
     }
 
     @Test(groups = "lcg", dataProvider = "random", dataProviderClass = Providers.class)
@@ -159,12 +157,12 @@ public class RestartTest {
         solver.setSearch(domOverWDegSearch(ticks));
         while (solver.solve()) ;
         assertEquals(solver.getRestartCount(), 2);
-        assertEquals(solver.getSolutionCount(), 3);
+        assertEquals(solver.getSolutionCount(), 6);
         assertEquals(solver.getObjectiveManager().getBestSolutionValue(), 34);
         solver.hardReset();
         while (solver.solve()) ;
         assertEquals(solver.getRestartCount(), 0);
-        assertEquals(solver.getSolutionCount(), 10);
+        assertEquals(solver.getSolutionCount(), 8);
         assertEquals(solver.getObjectiveManager().getBestSolutionValue(), 34);
     }
 

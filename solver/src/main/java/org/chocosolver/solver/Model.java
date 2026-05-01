@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver;
@@ -50,7 +47,7 @@ import java.util.stream.StreamSupport;
  * @see org.chocosolver.solver.constraints.Constraint
  * @since 0.01
  */
-public final class Model implements IModel {
+public class Model implements IModel {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /////////////////////////////////////// PRIVATE FIELDS /////////////////////////////////////////////////////////////
@@ -183,7 +180,18 @@ public final class Model implements IModel {
      * The model is named <code>name</code> and is set up with paramaters defined in <code>settings</code>.
      *
      * @param name        The name of the model (for logging purpose)
-     * @param settings    settings to use
+     * @param settings    settings builder to use to set up the model.
+     */
+    public Model(String name, SettingsBuilder settings) {
+        this(name, settings.build());
+    }
+
+    /**
+     * Creates a Model object to formulate a decision problem by declaring variables and posting constraints.
+     * The model is named <code>name</code> and is set up with paramaters defined in <code>settings</code>.
+     *
+     * @param name        The name of the model (for logging purpose)
+     * @param settings    settings to use to set up the model.
      */
     public Model(String name, Settings settings) {
         this.name = name;
@@ -197,7 +205,7 @@ public final class Model implements IModel {
         this.objective = null;
         this.hooks = new HashMap<>();
         this.settings = settings;
-        this.solver = settings.initSolver(this);
+        this.solver = new Solver(this);
         // to make sure MiniSat.C_Undef is not null, call it once
         this.hooks.put("C_Undef", MiniSat.C_Undef);
         this.hooks.clear();
@@ -209,10 +217,10 @@ public final class Model implements IModel {
      * The model is named <code>name</code> and uses the default (trailing) backtracking environment.
      *
      * @param name The name of the model (for logging purpose)
-     * @see Model#Model(String, Settings)
+     * @see Model#Model(String, SettingsBuilder)
      */
     public Model(String name) {
-        this(name, Settings.init());
+        this(name, SettingsBuilder.init());
     }
 
     /**
@@ -220,9 +228,21 @@ public final class Model implements IModel {
      * The model is uses the default (trailing) backtracking environment.
      *
      * @param settings settings to use
-     * @see Model#Model(String, Settings)
+     * @see Model#Model(String, SettingsBuilder)
      */
     public Model(Settings settings) {
+        this("Model-" + nextModelNum(), settings);
+    }
+
+
+    /**
+     * Creates a Model object to formulate a decision problem by declaring variables and posting constraints.
+     * The model is uses the default (trailing) backtracking environment.
+     *
+     * @param settings settings to use
+     * @see Model#Model(String, SettingsBuilder)
+     */
+    public Model(SettingsBuilder settings) {
         this("Model-" + nextModelNum(), settings);
     }
 
@@ -983,7 +1003,7 @@ public final class Model implements IModel {
                             "A call to Model.post(Constraint) is more appropriate.");
                 } else {
                     for (Propagator<?> p : c.getPropagators()) {
-                        getSolver().getEngine().execute(p);
+                        getSolver().getEngine().execute(p, false);
                     }
                 }
             }

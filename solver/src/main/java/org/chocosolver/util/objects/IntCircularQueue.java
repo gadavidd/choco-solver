@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.util.objects;
@@ -167,7 +164,7 @@ public class IntCircularQueue  {
     @Override
     public String toString() {
         final StringBuilder buf = new StringBuilder("{");
-        for (int i = 0; i < size - 1; i++) {
+        for (int i = 0; i < size; i++) {
             int pos = convert(head + i, 0);
             buf.append(elementData[pos]);
             buf.append(", ");

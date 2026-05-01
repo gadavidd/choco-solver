@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 /**
@@ -53,6 +50,7 @@ public class NValueTest {
             }
         });
         while (model.getSolver().solve()) ;
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 114);
     }
 
     @Test(groups = "1s", timeOut = 60000)
@@ -80,6 +78,7 @@ public class NValueTest {
             }
         });
         while (model.getSolver().solve()) ;
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 126);
     }
 
 
@@ -143,6 +142,7 @@ public class NValueTest {
         model.nValues(x, n).post();
         model.getSolver().setSearch(Search.inputOrderLBSearch(ArrayUtils.append(new IntVar[]{n}, x)));
         while (model.getSolver().solve()) ;
+        Assert.assertEquals(model.getSolver().getSolutionCount(), 161051);
 
         Model model2 = new Model();
         IntVar[] x2 = model2.intVarArray("x2", nVars, 0, domainSize, false);
@@ -150,15 +150,14 @@ public class NValueTest {
         model2.nValues(x2, n2).post();
         model2.getSolver().setSearch(Search.inputOrderLBSearch(ArrayUtils.concat(x2, n2)));
         while (model2.getSolver().solve()) ;
+        Assert.assertEquals(model2.getSolver().getSolutionCount(), 161051);
 
         Model model3 = new Model();
         IntVar[] x3 = model3.intVarArray("x3", nVars, 0, domainSize, false);
         IntVar n3 = model3.intVar("n3", 1, nVars, true);
         model3.nValues(x3, n3).post();
         while (model3.getSolver().solve()) ;
-
-        Assert.assertEquals(model.getSolver().getSolutionCount(), model2.getSolver().getSolutionCount());
-        Assert.assertEquals(model.getSolver().getSolutionCount(), model3.getSolver().getSolutionCount());
+        Assert.assertEquals(model3.getSolver().getSolutionCount(), 161051);
     }
 
     @Test(groups = "10s", timeOut = 60000)

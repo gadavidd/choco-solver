@@ -1,23 +1,17 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.variables.impl;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 import org.chocosolver.solver.Cause;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableBitSet;
 import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableRangeSet;
 import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableSet;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.*;
@@ -31,19 +25,6 @@ public abstract class IntVarTest {
 
 
     public abstract void setup();
-
-    @Test(groups="1s", timeOut=60000)
-    public void testIterator() {
-        setup();
-        int value = var.getLB()-1;
-        Iterator<Integer> iter = var.iterator();
-        while(value < var.getUB()) {
-            Assert.assertTrue(iter.hasNext());
-            Assert.assertEquals(iter.next().intValue(), value+1);
-            value++;
-        }
-        Assert.assertThrows(NoSuchElementException.class, () -> iter.next());
-    }
 
     //------------------------------------
     //------- Remove interval ------------

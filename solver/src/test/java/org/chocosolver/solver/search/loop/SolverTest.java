@@ -1,16 +1,13 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.search.loop;
 
 import org.chocosolver.solver.Model;
-import org.chocosolver.solver.Settings;
+import org.chocosolver.solver.SettingsBuilder;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.exception.ContradictionException;
@@ -29,6 +26,7 @@ import org.chocosolver.solver.search.strategy.strategy.IntStrategy;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.ProblemMaker;
+import org.chocosolver.util.tools.PreProcessing;
 import org.chocosolver.util.tools.VariableUtils;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -122,7 +120,7 @@ public class SolverTest {
         r.setHBFS(.05, .1, 32);
         while (model.getSolver().solve()) ;
         assertEquals(model.getSolver().getSolutionCount(), 7);
-        assertEquals(model.getSolver().getNodeCount(), 4542);
+        assertEquals(model.getSolver().getNodeCount(), 5881);
     }
 
     @Test(groups = "1s", timeOut = 60000)
@@ -178,7 +176,7 @@ public class SolverTest {
         while (model.getSolver().solve()) ;
 
         assertEquals(model.getSolver().getSolutionCount(), 3);
-        assertEquals(model.getSolver().getNodeCount(), 16);
+        assertEquals(model.getSolver().getNodeCount(), 17);
     }
 
     @Test(groups = "1s", timeOut = 60000)
@@ -331,7 +329,7 @@ public class SolverTest {
 
     @Test(groups = "1s")
     public void testMessage() {
-        Model choco = new Model(Settings.init().setWarnUser(true));
+        Model choco = new Model(SettingsBuilder.init().setWarnUser(true));
         Constraint expr = choco.arithm(choco.intVar(1, 2), "<", 2);
         expr.getOpposite().post();
         ByteArrayOutputStream errContent = new ByteArrayOutputStream();
@@ -443,8 +441,11 @@ public class SolverTest {
         long before = VariableUtils.domainCardinality(model.retrieveIntVars(true));
         Assert.assertEquals(before, 256);
         solver.propagate();
-        solver.preprocessing(2000);
+        PreProcessing.sac(model, -1);
         long after = VariableUtils.domainCardinality(model.retrieveIntVars(true));
-        Assert.assertEquals(after,32);
+        Assert.assertEquals(after,16);
+        solver.findAllSolutions();
+        Assert.assertEquals(solver.getSolutionCount(), 2);
+        Assert.assertEquals(solver.getFailCount(), 0);
     }
 }

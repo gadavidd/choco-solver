@@ -4,23 +4,119 @@ Choco Solver ChangeLog
 This file is dedicated to sum up the new features added and bugs fixed in Choco-solver since the version, 4.0.0.
 **Note**: double-space is replaced by "\t" character on release process. Make sure the format is ok.
 
-NEXT MILESTONE
+5.0.1 - 10 Apr 2026
 ---------------------
 
 ### Major features:
 
+#### Constraints & LCG
+- Add table reformulation for pow constraint when LCG is on
+- Reduce runtime for building table reformulations by excluding the result variable from the tuple generation
+- Fix integer overflow in PropDivXYZLight
+- Fix bounded domains management with LCG in PropDivXYZ
+- Faster modulo constraint with large domains
+- Add arithm preprocessing
+- Fix decreasing constraint
+
 ### Deprecated API (to be removed in next release):
 
 ### Other closed issues and pull requests:
-See [milestone 5.0.0-beta.2](https://github.com/chocoteam/choco-solver/milestone/41)
-
-- Fix bug in ConflictOrderingSearch (monitor not plugged)
-- Performance improvement for LastConflict, ConflictOrderingSearch and StrategySequencer.
-- Fix bug : regular constraints parsed from XCSP now support negative values
+See [milestone 5.0.1](https://github.com/chocoteam/choco-solver/milestone/41)
 
 #### Contributors to this release:
 - [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom)
 - [Jean-Guillaume Fages](https://github.com/jgFages) (@jgFages)
+
+**Full Changelog**: https://github.com/chocoteam/choco-solver/compare/v5.0.0...v5.0.1
+
+5.0.0 - 02 Feb 2026
+---------------------
+
+### Major features:
+
+This set of commits delivers a major consolidation of Lazy Clause Generation, 
+significant performance and memory improvements, 
+more robust constraint handling, 
+and a broad cleanup and modernization of the internal APIs and tooling.
+
+#### Performance & Algorithms
+- Significant performance improvements on:
+- Core propagators (X+Y=Z, abs, div, sum, scalar, etc.)
+- CompactTable (CT) and STR2+
+- Memory management and estimation mechanisms
+- Dynamic selection of table algorithms based on memory footprint
+- Optimizations in MiniSat and SAT-related components (clause reduction, propagation, assertions)
+
+#### Lazy Clause Generation (LCG)
+- Major consolidation effort on LCG:
+- Fixes for critical bugs (initialization, reification, lost propagations)
+- New assertions and invariants
+- Improved separation and handling of learnt clauses (failure vs prohibiting-solution)
+- Extended LCG support for constraints such as abs, div, table, element
+- Better interaction with:
+    - Restart strategies
+    - ParallelPortfolio
+    - Explanation and Reason APIs
+
+#### Constraints & Modeling
+- Refactoring or improvement of many constraints:
+- AllDifferent, AllDifferentExcept*
+- Cumulative, DiffN, BinPacking, Element, Table
+- Arithmetic constraints (abs, div, times, min/max)
+- Smarter choice between decomposition and extension
+- Improved expression recognition and handling (XCSP / Flatzinc)
+#### Testing & Robustness
+- Numerous test fixes and stabilizations
+- Addition of new tests, especially for LCG and XCSP
+- Timeout adjustments
+- Cleanup of memory-intensive or unstable tests
+#### XCSP / Flatzinc / Parsing
+- Update of XCSP3 tools (v2.5)
+- Improvements in parsing and expression handling
+- Better support for:
+  - Negative values
+  - Constants
+  - Variable groups and restarts
+- Competition-oriented adjustments for XCSP and Flatzinc
+#### Search & Strategies
+- Enhancements to:
+  - RoundRobin strategies
+  - Dom/Wdeg and ConflictHistorySearch
+  - MetaStrategy framework
+- New parameters and more robust default behaviors
+- Simplification and clarification of search-related APIs
+#### Refactoring & API Evolution
+- Large-scale code cleanup:
+  - Removal of obsolete classes
+  - Simplification of core APIs (IntVar, Decision, Reason)
+- Improved and updated Javadoc
+- Clearer separation of responsibilities between Solver, MiniSat, and learning components
+#### Build, CI & Tooling
+- Updates to Maven configuration, Docker, and Makefiles
+- CI workflow adjustments (tests, snapshots, releases)
+- Preparation of intermediate and beta releases
+
+
+
+### Deprecated API (to be removed in next release):
+
+### Other closed issues and pull requests:
+See [milestone 5.0.0-beta.2](https://github.com/chocoteam/choco-solver/milestone/40)
+
+- Performance improvement in PropXPlusYEqZ and PropAbsolute
+- Fix bug in ConflictOrderingSearch (monitor not plugged)
+- Performance improvement for LastConflict, ConflictOrderingSearch and StrategySequencer.
+- Fix bug : regular constraints parsed from XCSP now support negative values
+- Fix bug : Unexpected behavior when using Task with scalar (#1114)
+- Replace Cumulative implementation by state-of-the-art implementation of TimeTabling and OverloadChecking
+- Fix bug : IntVar no longer extends Iterable to avoid errors in nested loops
+- Fix bug : Fix iterator issue when using ISet, especially within graph variables (#1174 and #1175)
+
+#### Contributors to this release:
+- [Charles Prud'homme](https://github.com/cprudhom) (@cprudhom)
+- [Jean-Guillaume Fages](https://github.com/jgFages) (@jgFages)
+- [Arthur Godet](https://github.com/ArthurGodet) (@ArthurGodet)
+- [Sulian Le Bozec Chiffoleau](https://github.com/SulianLBC) (@SulianLBC)
 
 
 **Full Changelog**: https://github.com/chocoteam/choco-solver/compare/v5.0.0-beta.1...v5.0.0-beta.2
@@ -39,7 +135,7 @@ This new version has necessitated a rather intrusive revision of the way propaga
 
 By default, LCG is not enabled. The following code shows how to enable it:
 ```java
-Model model = new Model(Settings.init().setLCG(true));
+Model model = new Model(SettingsBuilder.init().setLCG(true));
 ```
 
 At this stage, this is a [beta version](https://github.com/orgs/chocoteam/projects/1).
@@ -69,23 +165,6 @@ See [milestone 5.0.0](https://github.com/chocoteam/choco-solver/milestone/40)
 ### Deprecated API (to be removed in next release):
 
 **Full Changelog**: https://github.com/chocoteam/choco-solver/compare/v4.10.17...v4.10.18
-
-4.10.17 - 23 Sep 2024
- -------------------
- 
- ### Hotfix
- - Fix bug in `PropHybridTable` (#1102)
- 
- **Full Changelog**: https://github.com/chocoteam/choco-solver/compare/v4.10.16...v4.10.17
-
-4.10.16 - 12 Sep 2024
--------------------
-
-### Hotfix
-- Fix bug in `IntAffineView` (#1101)
-
-**Full Changelog**: https://github.com/chocoteam/choco-solver/compare/v4.10.15...v4.10.16
-
 
 4.10.17 - 23 Sep 2024
 -------------------

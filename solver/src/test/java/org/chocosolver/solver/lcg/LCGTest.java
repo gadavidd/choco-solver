@@ -1,28 +1,20 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.lcg;
 
-import gnu.trove.set.hash.TIntHashSet;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Providers;
-import org.chocosolver.solver.Settings;
+import org.chocosolver.solver.SettingsBuilder;
 import org.chocosolver.solver.Solver;
 import org.chocosolver.solver.constraints.Constraint;
+import org.chocosolver.solver.constraints.nary.cnf.LogOp;
 import org.chocosolver.solver.search.strategy.Search;
-import org.chocosolver.solver.search.strategy.selectors.values.SetDomainMin;
-import org.chocosolver.solver.search.strategy.selectors.variables.InputOrder;
-import org.chocosolver.solver.search.strategy.selectors.variables.Random;
-import org.chocosolver.solver.search.strategy.strategy.SetStrategy;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
-import org.chocosolver.solver.variables.SetVar;
 import org.chocosolver.util.tools.ArrayUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
@@ -62,9 +54,9 @@ public class LCGTest {
                 .toArray(Object[][]::new);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////  NQUEEN  //////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////  NQUEEN  //////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @DataProvider
     public static Object[][] nqueen() {
@@ -78,7 +70,7 @@ public class LCGTest {
     @Test(groups = "lcg", dataProvider = "nqueen", timeOut = 60000)
     public void testNQueenOneSolution(boolean bounded, boolean view, int n, int s, long seed) {
         Model model = new Model("LCG Queens sat",
-                Settings.init().setLCG(true));
+                SettingsBuilder.init().setLCG(true));
         IntVar[] vars = model.intVarArray("Q", n, 1, n, bounded);
 
         for (int i = 0; i < n; i++) {
@@ -110,7 +102,7 @@ public class LCGTest {
     @Test(groups = "lcg", dataProvider = "nqueen", timeOut = 60000)
     public void testNQueenAllSolutions(boolean bounded, boolean view, int n, int s, long seed) {
         Model model = new Model("LCG Queens enum",
-                Settings.init().setLCG(true));
+                SettingsBuilder.init().setLCG(true));
         IntVar[] vars = model.intVarArray("Q", n, 1, n, bounded);
 
         for (int i = 0; i < n; i++) {
@@ -136,9 +128,45 @@ public class LCGTest {
     }
 
     @Test(groups = "lcg", dataProvider = "nqueen", timeOut = 60000)
+    public void testNQueenAllSolutionsLim(boolean bounded, boolean view, int n, int s, long seed) {
+        // to ensure that prohibiting-solution clauses are not removed by the clause database reduction
+        Model model = new Model("LCG Queens enum",
+                SettingsBuilder.init().setLCG(true)
+                        .setNbMaxLearntClauses(100)
+        );
+        IntVar[] vars = model.intVarArray("Q", n, 1, n, bounded);
+
+        for (int i = 0; i < n; i++) {
+            for (int j = i + 1; j < n; j++) {
+                model.arithm(vars[i], "!=", vars[j]).post();
+                if (view) {
+                    model.arithm(vars[i], "!=", vars[j], "+", j - i).post();
+                    model.arithm(vars[i], "!=", vars[j], "-", j - i).post();
+                } else {
+                    model.arithm(vars[i], "!=", model.intView(1, vars[j], j - i)).post();
+                    model.arithm(vars[i], "!=", model.intView(1, vars[j], -j + i)).post();
+                }
+            }
+        }
+        Solver solver = model.getSolver();
+        if (seed == 0) {
+            solver.setSearch(Search.inputOrderLBSearch(vars));
+        } else {
+            solver.setSearch(Search.randomSearch(vars, seed));
+        }
+        while (solver.solve()) {
+//            System.out.printf("#%d : %s%n",
+//                    solver.getSolutionCount(),
+//                    Arrays.toString(Arrays.stream(vars).mapToInt(IntVar::getValue).toArray()));
+        }
+        ;
+        Assert.assertEquals(solver.getSolutionCount(), s, "seed: " + seed);
+    }
+
+    @Test(groups = "lcg", dataProvider = "nqueen", timeOut = 60000)
     public void testNQueenOptim(boolean bounded, boolean view, int n, int s, long seed) {
         Model model = new Model("LCG Queens opt",
-                Settings.init()
+                SettingsBuilder.init()
                         .setLCG(true)
         );
         IntVar[] vars = model.intVarArray("Q", n, 1, n + 1, bounded); // <= one more column
@@ -168,9 +196,9 @@ public class LCGTest {
         Assert.assertEquals(solver.getObjectiveManager().getBestSolutionValue(), n + 1);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////  GOLOMB  //////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////  GOLOMB  //////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @DataProvider
     public static Object[][] alldiff() {
@@ -193,7 +221,7 @@ public class LCGTest {
     @Test(groups = "lcg", dataProvider = "golomb", timeOut = 60000)
     public void testGolombRuler(boolean bounded, boolean view, int m, int o, String a, long seed) {
         Model model = new Model("LCG Golomb ruler",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         IntVar[] ticks = model.intVarArray("a", m, 0, (m < 31) ? (1 << (m + 1)) - 1 : 9999, bounded);
         model.arithm(ticks[0], "=", 0).post();
@@ -242,7 +270,7 @@ public class LCGTest {
     public void testGolombRuler2(boolean bounded, boolean view, int m, int o, String a, long seed) {
         int[] length = new int[]{0, 0, 1, 3, 6, 11, 17, 25, 34, 44, 55, 72, 85, 106, 127};
         Model model = new Model("LCG Golomb ruler",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         IntVar[] ticks = new IntVar[m];
         ticks[0] = model.intVar("a0", 0);
@@ -286,9 +314,9 @@ public class LCGTest {
         Assert.assertEquals(solver.getObjectiveManager().getBestSolutionValue(), o);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////  MILP  ////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////  MILP  ////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @DataProvider
     public static Object[][] milp() {
@@ -310,7 +338,7 @@ public class LCGTest {
     @Test(groups = "lcg", dataProvider = "milp", timeOut = 60000)
     public void testMILP(boolean bounded, boolean view, long seed) {
         Model model = new Model("LCG MILP",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         // Variables
         IntVar[] x = model.intVarArray("x", 8, 0, 100, bounded);
@@ -357,7 +385,7 @@ public class LCGTest {
     @Test(groups = "lcg", dataProvider = "milp", timeOut = 60000)
     public void testMILPBin(boolean bounded, boolean view, long seed) {
         Model model = new Model("LCG MILP bin",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         // Variables
         BoolVar[] x = model.boolVarArray("x", 8);
@@ -403,9 +431,9 @@ public class LCGTest {
 
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////  SCHUR LEMMA //////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////  SCHUR LEMMA //////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @DataProvider
     public static Object[][] schurlemma() {
@@ -420,7 +448,7 @@ public class LCGTest {
     @Test(groups = "lcg", dataProvider = "schurlemma", timeOut = 60000)
     public void testSchurLemma(boolean bounded, boolean clause, int balls, int boxes, int nbsol, long seed) {
         Model model = new Model("LCG Schur Lemma",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         BoolVar[][] M = model.boolVarMatrix("b", balls, boxes); // M_ij is true iff ball i is in box j
 
@@ -474,7 +502,7 @@ public class LCGTest {
     @Test(groups = "lcg", dataProvider = "schurlemma", timeOut = 60000)
     public void testSchurLemmaInt(boolean bounded, boolean clause, int balls, int boxes, int nbsol, long seed) {
         Model model = new Model("LCG Schur Lemma",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         IntVar[][] M = new IntVar[balls][boxes];
         for (int i = 0; i < balls; i++) {
@@ -522,7 +550,7 @@ public class LCGTest {
     @Test(groups = "lcg", timeOut = 60000)
     public void testBoolVars() {
         Model model = new Model("LCG Bin Neq 1",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         IntVar[] bs = model.boolVarArray("b", 3);
         model.arithm(bs[0], "!=", bs[1]).post();
@@ -536,7 +564,7 @@ public class LCGTest {
     @Test(groups = "lcg", timeOut = 60000)
     public void testBoolVars2() {
         Model model = new Model("LCG Bin Neq 2",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         IntVar[] bs = model.boolVarArray("b", 3);
         model.arithm(bs[0], "!=", bs[1]).post();
@@ -550,7 +578,7 @@ public class LCGTest {
     @Test(groups = "lcg", timeOut = 60000)
     public void testBoolVars3() {
         Model model = new Model("LCG MILP",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         BoolVar[] bs = model.boolVarArray("b", 3);
         model.addClausesBoolAndEqVar(bs[0], bs[1], bs[2].not());
@@ -561,14 +589,14 @@ public class LCGTest {
         Assert.assertEquals(solver.getSolutionCount(), 0);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////  REIFICATION //////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////  REIFICATION //////////////////////////////////////////////////////////
+    /// /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     @Test(groups = "lcg", dataProvider = "seed", timeOut = 60000)
     public void testEq(long seed) {
         Model model = new Model("LCG Reification",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         IntVar[] vs = model.intVarArray("v", 2, 0, 3);
         BoolVar b = model.boolVar("b");
@@ -588,7 +616,7 @@ public class LCGTest {
     @Test(groups = "lcg", timeOut = 60000, dataProvider = "seed")
     public void testReif(long seed) {
         Model model = new Model("LCG BACP",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         int n = 100;
         IntVar cp = model.intVar("cp", 1, n, false);
@@ -620,7 +648,7 @@ public class LCGTest {
     @Test(groups = "lcg", dataProvider = "view")
     public void testIsEq(boolean view, long seed) {
         Model model = new Model("LCG isEq",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         int t = 2;
         IntVar x = model.intVar("x", 1, 4);
@@ -645,7 +673,7 @@ public class LCGTest {
     @Test(groups = "lcg", dataProvider = "view")
     public void testIsGeq(boolean view, long seed) {
         Model model = new Model("LCG isGeq",
-                Settings.init().setLCG(true)
+                SettingsBuilder.init().setLCG(true)
                         .setWarnUser(true));
         int t = 2;
         IntVar x = model.intVar("x", 0, 4);
@@ -665,5 +693,77 @@ public class LCGTest {
         }
         while (solver.solve()) ;
         Assert.assertEquals(solver.getSolutionCount(), 3);
+    }
+
+    @Test(groups = "lcg", timeOut = 60000)
+    public void testReification() {
+        Model model = new Model(SettingsBuilder.init().setLCG(true));
+        IntVar[] x = model.intVarArray("x", 6, 0, 1);
+        IntVar[] y = model.intVarArray("y", 6, 0, 1);
+        BoolVar b = model.boolVar("b");
+        model.lexLessEq(x, y).reifyWith(b);
+
+        x[0].eq(1).post();
+        y[0].eq(1).post();
+        x[1].eq(0).post();
+        y[1].eq(0).post();
+        x[5].eq(1).post();
+        y[5].eq(1).post();
+
+        y[2].eq(0).post();
+        x[3].eq(0).post();
+        y[4].eq(0).post();
+
+        // if b is true and x[2] = 0, then x[4] = 1 and y[3] = 0
+        model.addClauses(
+                LogOp.implies(
+                        LogOp.and(b, model.isEq(x[2], 0)),
+                        LogOp.and(model.isEq(x[4], 1), model.isEq(y[3], 0))
+                ));
+//
+        Solver solver = model.getSolver();
+        solver.setSearch(Search.inputOrderUBSearch(b, x[2], y[3], x[4]));
+        solver.findAllSolutions();
+        Assert.assertEquals(solver.getSolutionCount(), 5);
+    }
+
+    @Test(groups = "lcg", timeOut = 600000)
+    public void test685() {
+
+        for (int i = 1024; i >= 908; i /= 2) {
+            System.out.printf("Testing with range [%d,%d]%n", Short.MIN_VALUE / i, Short.MAX_VALUE / i);
+
+            //{a*b + c == 2020, a + b*c == 2021}
+            Model model = new Model(SettingsBuilder.init().setLCG(true));
+            IntVar a = model.intVar("a", Short.MIN_VALUE / i, Short.MAX_VALUE / i);
+            IntVar b = model.intVar("b", Short.MIN_VALUE / i, Short.MAX_VALUE / i);
+            IntVar c = model.intVar("c", Short.MIN_VALUE / i, Short.MAX_VALUE / i);
+            a.mul(b).add(c).eq(20).post();
+            a.add(b.mul(c)).eq(21).post();
+            //model.displayVariableOccurrences();
+            //model.displayPropagatorOccurrences();
+            Solver solver = model.getSolver();
+            solver.showShortStatistics();
+            //solver.showDecisions(()->"");
+            while (solver.solve()) {
+                System.out.printf("a=%d b=%d c=%d%n", a.getValue(), b.getValue(), c.getValue());
+            }
+            Assert.assertEquals(solver.getSolutionCount(), 1);
+        }
+    }
+
+    @DataProvider
+    public Object[][] offsets() {
+        return new Object[][]{{0}, {1}};
+    }
+
+    @Test(groups = "lcg", timeOut = 600000, dataProvider = "offsets")
+    public void testJG1(int offset) {
+        // When the domain is sparse, the lit-based domain was not correctly instantiated
+        Model model = new Model(SettingsBuilder.init().setLCG(true));
+        IntVar a = model.intVar("a", offset, 31);
+        IntVar b = model.intVar("b", new int[]{offset, 10, 20, 30});
+        model.arithm(a, "=", b).post();
+        model.getSolver().solve();
     }
 }

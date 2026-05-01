@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.util.tools;
@@ -336,6 +333,20 @@ public class VariableUtils {
             card *= vars[i].getDomainSize();
         }
         return Math.min(Integer.MAX_VALUE, card);
+    }
+
+    /**
+     * Check if all variables in the array have an enumerated domain.
+     * @param vars  array of variables
+     * @return <i>true</i> if all variables have an enumerated domain, <i>false</i> otherwise
+     */
+    public static boolean allEnumerated(IntVar[] vars) {
+        for (IntVar var : vars) {
+            if (!var.hasEnumeratedDomain()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

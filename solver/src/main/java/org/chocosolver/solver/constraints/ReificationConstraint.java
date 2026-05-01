@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.constraints;
@@ -106,8 +103,7 @@ public class ReificationConstraint extends Constraint {
         for (int p = indices[idx]; p < indices[idx + 1]; p++) {
             assert (propagators[p].isReifiedAndSilent());
             propagators[p].setReifiedTrue();
-            model.getSolver().getEngine().execute(propagators[p]);
-            model.getSolver().getEngine().onPropagatorExecution(propagators[p]);
+            model.getSolver().getEngine().execute(propagators[p], true);
         }
     }
 

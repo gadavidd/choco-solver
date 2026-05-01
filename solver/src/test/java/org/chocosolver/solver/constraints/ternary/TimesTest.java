@@ -1,21 +1,17 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.constraints.ternary;
 
 import org.chocosolver.memory.EnvironmentBuilder;
-import org.chocosolver.solver.Model;
-import org.chocosolver.solver.Providers;
-import org.chocosolver.solver.Settings;
+import org.chocosolver.solver.*;
 import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.constraints.Propagator;
 import org.chocosolver.solver.exception.ContradictionException;
+import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -102,7 +98,7 @@ public class TimesTest extends AbstractTernaryTest {
     @Test(groups = "1s", timeOut = 60000)
     public void testJL5() {
         Model s = new Model(
-                Settings.init().setEnvironmentSupplier(() -> new EnvironmentBuilder()
+                SettingsBuilder.init().setEnvironmentSupplier(() -> new EnvironmentBuilder()
                         .setWorldNumber(65536)
                         .setWorldSize(16)
                         .build()));
@@ -115,7 +111,7 @@ public class TimesTest extends AbstractTernaryTest {
 
     @Test(groups = "1s", timeOut = 60000)
     public void testJL6() {
-        Model s = new Model(Settings.init().setEnableTableSubstitution(false));
+        Model s = new Model(SettingsBuilder.init().setEnableTableSubstitution(false));
         IntVar i1 = s.intVar("i1", new int[]{1, 55000});
         IntVar i2 = s.intVar("i2", new int[]{1, 55000});
         IntVar i3 = s.intVar("i3", new int[]{1, 55000});
@@ -124,7 +120,7 @@ public class TimesTest extends AbstractTernaryTest {
 
     @Test(groups = "1s", timeOut = 60000)
     public void testJL7() {
-        Model s = new Model(Settings.init().setEnableTableSubstitution(false));
+        Model s = new Model(SettingsBuilder.init().setEnableTableSubstitution(false));
         IntVar i1 = s.intVar("i1", new int[]{1, 10000});
         IntVar i2 = s.intVar("i2", new int[]{1, 10000});
         IntVar i3 = s.intVar("i3", new int[]{1, 10000});
@@ -133,7 +129,7 @@ public class TimesTest extends AbstractTernaryTest {
 
     @Test(groups = "1s", timeOut = 60000)
     public void testJL8() {
-        Model s = new Model(Settings.init().setEnableTableSubstitution(false));
+        Model s = new Model(SettingsBuilder.init().setEnableTableSubstitution(false));
         IntVar i1 = s.intVar("i1", new int[]{1, IntVar.MAX_INT_BOUND});
         IntVar i2 = s.intVar("i2", new int[]{1, IntVar.MAX_INT_BOUND});
         IntVar i3 = s.intVar("i3", new int[]{1, 10});
@@ -144,10 +140,30 @@ public class TimesTest extends AbstractTernaryTest {
 
     @Test(groups = "1s", timeOut = 60000, dataProvider = "trueOrFalse", dataProviderClass = Providers.class)
     public void testMats1(boolean tableSubs) {
-        Model model = new Model("model", Settings.prod().setEnableTableSubstitution(tableSubs));
+        Model model = new Model("model", SettingsBuilder.prod().setEnableTableSubstitution(tableSubs));
         IntVar i1 = model.intVar("a", new int[]{-4, -1, 2});
         IntVar i2 = model.intVar("b", new int[]{-2, -1});
         model.times(i1, i2, i1).post();
         Assert.assertFalse(model.getSolver().solve());
+    }
+
+    @Test(groups = "1s", dataProviderClass = Providers.class, dataProvider = "trueOrFalse", timeOut = 60000)
+    public void testJBSC1(boolean lcg){
+        Model model = new Model("model", SettingsBuilder.dev().setLCG(lcg));
+
+        // X =b_0_[2] = [0,1]
+        BoolVar x = model.boolVar("x");
+        // IV_33 = {-1..0}
+        IntVar i1 = model.intVar("i1", new int[]{-1, 0});
+        // Y = 2.((IV_33≥0)) + 0[0,2]
+        IntVar y = model.intView(2, model.isGeq(i1, 0), 0);
+        //Z=nH2_0 = {0..2}
+        IntVar z = model.intVar("z", 0,2);
+
+        model.times(x, y, z).post();
+        Solver solver = model.getSolver();
+        solver.showSolutions(() -> String.format("%d x %d = %d", x.getValue(), y.getValue(), z.getValue()));
+        solver.findAllSolutions();
+        Assert.assertEquals(solver.getSolutionCount(), 4);
     }
 }

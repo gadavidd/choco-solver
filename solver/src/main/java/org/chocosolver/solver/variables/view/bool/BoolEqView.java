@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.variables.view.bool;
@@ -53,6 +50,7 @@ public final class BoolEqView<I extends IntVar> extends BoolIntView<I> {
     @Override
     public boolean instantiateTo(int value, ICause cause, Reason reason) throws ContradictionException {
         assert cause != null;
+        reason = cause.manageReification().apply(reason); // to deal with reification of the earliest cause
         boolean done = false;
         if (value < 0 || value > 1) {
             if (getModel().getSolver().isLCG()) {

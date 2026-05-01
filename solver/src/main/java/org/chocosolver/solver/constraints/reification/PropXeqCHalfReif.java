@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.constraints.reification;
@@ -46,7 +43,7 @@ public class PropXeqCHalfReif extends Propagator<IntVar> {
         if (vIdx < 1) {
             return IntEventType.all();
         }
-        return IntEventType.INCLOW.getMask();
+        return IntEventType.INSTANTIATE.getMask();
     }
 
     @Override
@@ -56,11 +53,19 @@ public class PropXeqCHalfReif extends Propagator<IntVar> {
             setPassive();
         } else if (b.isInstantiatedTo(1)) {
             // if b is true, then x must be equal to c
-            x.instantiateTo(c, this, lcg() ? Reason.r(b.getValLit()) : Reason.undef());
+            x.instantiateTo(c, this, lcg() ? this.r(b.getValLit()) : Reason.undef());
         }
         // if b is undefined and x does not contain c, b must be false
         else if (!x.contains(c)) {
-            b.setToFalse(this, lcg() ? Reason.r(x.getLit(c, IntVar.LR_EQ)) : Reason.undef());
+            if(x.hasEnumeratedDomain()) {
+                b.setToFalse(this, lcg() ? this.r(x.getLit(c, IntVar.LR_EQ)) : Reason.undef());
+            }else{
+                if(x.getUB() < c){
+                    b.setToFalse(this, lcg() ? this.r(x.getMaxLit()) : Reason.undef());
+                } else if (x.getLB() > c) {
+                    b.setToFalse(this, lcg() ? this.r(x.getMinLit()) : Reason.undef());
+                }
+            }
             setPassive();
         }
     }

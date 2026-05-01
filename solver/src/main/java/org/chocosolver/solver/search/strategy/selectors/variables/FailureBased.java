@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.search.strategy.selectors.variables;
@@ -55,7 +52,7 @@ public class FailureBased<V extends Variable> implements IMonitorContradiction, 
      * @param sType: the score type. 1->FRB; 2->FRBA; 3->FLB; 4->FLBA.
      */
     public FailureBased(V[] vars, long seed, int sType) {
-        ran = new Random(seed);
+        this.ran = seed > -1 ? new java.util.Random(seed) : null;
         solver = vars[0].getModel().getSolver();
         solver.plugMonitor(this);
         varNum = vars.length;
@@ -106,8 +103,11 @@ public class FailureBased<V extends Variable> implements IMonitorContradiction, 
                 currenFixNum++;
             }
         }
-        if (bests.size() > 0) {
-            currentVarIndex = bests.get(ran.nextInt(bests.size()));
+        if (!bests.isEmpty()) {
+            currentVarIndex = bests.get(0);
+            if (ran != null) {
+                currentVarIndex = bests.get(ran.nextInt(bests.size()));
+            }
             best = vars[currentVarIndex];
             assignTimes[currentVarIndex]++;
         }

@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.expression.discrete.logical;
@@ -12,6 +9,7 @@ package org.chocosolver.solver.expression.discrete.logical;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.exception.SolverException;
+import org.chocosolver.solver.expression.discrete.arithmetic.ArExpression;
 import org.chocosolver.solver.expression.discrete.relational.ReExpression;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
@@ -66,6 +64,11 @@ public class UnLoExpression extends LoExpression {
     @Override
     public void extractVar(HashSet<IntVar> variables) {
         e.extractVar(variables);
+    }
+
+    @Override
+    public ArExpression[] getExpressionChild() {
+        return new ArExpression[]{e};
     }
 
     @Override

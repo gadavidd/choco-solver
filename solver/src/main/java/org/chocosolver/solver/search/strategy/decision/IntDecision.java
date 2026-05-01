@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.search.strategy.decision;
@@ -146,13 +143,13 @@ public class IntDecision extends Decision<IntVar> {
             return String.format("d_%d: %s%s%d",
                     getPosition(),
                     var.getName(),
-                    nonrefuted ? "=": '\\',
+                    nonrefuted ? "=": "!=",
                     value);
         } else if (assignment.getClass().equals(DecisionOperatorFactory.makeIntNeq().getClass())) {
             return String.format("d_%d: %s%s%d",
                     getPosition(),
                     var.getName(),
-                    nonrefuted ? "\u2260" : '=',
+                    nonrefuted ? "!=" : '=',
                     value);
         } else if (assignment.getClass().equals(DecisionOperatorFactory.makeIntSplit().getClass())) {
             return String.format("d_%d: %s%s%s%d,%d]",

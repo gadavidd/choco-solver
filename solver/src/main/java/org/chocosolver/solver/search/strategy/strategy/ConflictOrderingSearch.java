@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.search.strategy.strategy;
@@ -12,14 +9,15 @@ package org.chocosolver.solver.search.strategy.strategy;
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
 import gnu.trove.map.hash.TIntIntHashMap;
-
+import org.chocosolver.solver.Model;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.search.loop.monitors.IMonitorContradiction;
 import org.chocosolver.solver.search.strategy.decision.Decision;
 import org.chocosolver.solver.search.strategy.decision.RootDecision;
 import org.chocosolver.solver.variables.Variable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Conflict Ordering Search
@@ -30,16 +28,12 @@ import java.util.*;
  * @author Charles Prud'homme
  * @since 15/06/2016
  */
-public class ConflictOrderingSearch<V extends Variable> extends AbstractStrategy<V> implements IMonitorContradiction {
+public class ConflictOrderingSearch<V extends Variable> extends MetaStrategy<V> implements IMonitorContradiction {
 
     //***********************************************************************************
     // VARIABLES
     //***********************************************************************************
 
-    /**
-     * The main strategy declared in the solver
-     */
-    private final AbstractStrategy<V> mainStrategy;
     /**
      * Store the variables in conflict
      */
@@ -70,9 +64,8 @@ public class ConflictOrderingSearch<V extends Variable> extends AbstractStrategy
      *
      * @param mainStrategy the main strategy declared
      */
-    public ConflictOrderingSearch(AbstractStrategy<V> mainStrategy) {
-        super(mainStrategy.vars);
-        this.mainStrategy = mainStrategy;
+    public ConflictOrderingSearch(Model model, AbstractStrategy<V> mainStrategy) {
+        super(model, mainStrategy);
         // internal datastructures
         vars = new ArrayList<>();
         var2pos = new TIntIntHashMap(16, .5f, -1, -1);
@@ -81,37 +74,8 @@ public class ConflictOrderingSearch<V extends Variable> extends AbstractStrategy
         pcft = -1;
     }
 
-    //***********************************************************************************
-    // METHODS
-    //***********************************************************************************
-
-    @Override
-    public boolean init() {
-        if (!model.getSolver().getSearchMonitors().contains(this)) {
-            model.getSolver().plugMonitor(this);
-        }
-        return mainStrategy.init();
-    }
-
-    @Override
-    public void remove() {
-        this.mainStrategy.remove();
-        if (model.getSolver().getSearchMonitors().contains(this)) {
-            model.getSolver().unplugMonitor(this);
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public Decision<V> getDecision() {
-        V decVar = firstNotInst();
-        if (decVar != null) {
-            Decision d = mainStrategy.computeDecision(decVar);
-            if (d != null) {
-                return d;
-            }
-        }
-        return mainStrategy.getDecision();
+    public V getSelectedVariable() {
+        return firstNotInst();
     }
 
     //***********************************************************************************

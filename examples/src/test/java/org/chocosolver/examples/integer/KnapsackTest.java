@@ -1,10 +1,7 @@
 /*
  * This file is part of examples, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.examples.integer;
@@ -131,7 +128,7 @@ public class KnapsackTest {
         ks.solveIt(s, true);
         Assert.assertEquals(s.getSolver().getBestSolutionValue().intValue(), 2657, "obj val");
         Assert.assertEquals(s.getSolver().getSolutionCount(), 3, "nb sol");
-        Assert.assertEquals(s.getSolver().getNodeCount(), 60, "nb nod");
+        Assert.assertEquals(s.getSolver().getNodeCount(), 59, "nb nod");
     }
 
     @Test(groups = "1s", timeOut = 60000)

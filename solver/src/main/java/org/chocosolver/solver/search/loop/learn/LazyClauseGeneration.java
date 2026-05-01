@@ -1,15 +1,13 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.search.loop.learn;
 
 import gnu.trove.list.array.TIntArrayList;
+import org.chocosolver.sat.ArrayClause;
 import org.chocosolver.sat.Clause;
 import org.chocosolver.sat.MiniSat;
 import org.chocosolver.solver.Cause;
@@ -23,6 +21,7 @@ import org.chocosolver.solver.variables.IntVar;
 import org.chocosolver.util.tools.VariableUtils;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * This class aims at defining a lazy clause generation algorithm as a {@link Learn} object.
@@ -38,9 +37,9 @@ import java.util.Arrays;
  */
 public class LazyClauseGeneration implements Learn {
     public static boolean VERBOSE = false;
+
     private static final String ON_FAILURE = "On SAT failure,";
     private static final String ON_SOLUTION = "On solution,";
-
     /**
      * The solver that is watched
      */
@@ -62,14 +61,28 @@ public class LazyClauseGeneration implements Learn {
      */
     private long nbRestarts = 0;
     /**
+     * Indicates whether the current clause comes from on a solution (or on a failure).
+     */
+    private boolean onSolution;
+    private final boolean isSortLitsOnSolution;
+    private long nextReductionCall;
+    private final long reduceBase;
+    private final long reduceFactor;
+    private int reductions = 0;
+    /**
      * A temporary storage for learnt clauses.
      */
-    private final TIntArrayList learnt_clause = new TIntArrayList();
+    private final SortableIntArrayList learnt_clause;
 
     public LazyClauseGeneration(Solver solver, MiniSat sat) {
         this.mSolver = solver;
         this.mSat = sat;
+        this.isSortLitsOnSolution = mSolver.getModel().getSettings().sortLitsOnSolution();
+        this.learnt_clause = new SortableIntArrayList(isSortLitsOnSolution);
         this.max_learnts = mSolver.getModel().getSettings().getNbMaxLearntClauses();
+        this.reduceBase = solver.getModel().getSettings().getReduceLearntClausesBase();
+        this.reduceFactor = solver.getModel().getSettings().getReduceLearntClausesFactor();
+        this.nextReductionCall = reduceBase;
     }
 
     @Override
@@ -95,19 +108,24 @@ public class LazyClauseGeneration implements Learn {
             mSolver.cancelTrail();
             mSolver.getDecisionPath().synchronize(true, learnt_clause.size() > 1);
             if (!learnt_clause.isEmpty()) {
-                mSat.addLearnt(learnt_clause);
+                if (onSolution && isSortLitsOnSolution) {
+                    learnt_clause.quicksort(1, learnt_clause.size() - 1);
+                }
+                mSat.addLearnt(learnt_clause, onSolution);
             }
         } else {
             nbRestarts = mSolver.getRestartCount();
         }
-        if (mSat.nLearnts() >= max_learnts) {
+        if (mSat.nLearnts() >= max_learnts || mSolver.getFailCount() > nextReductionCall) {
             mSat.doReduceDB();
+            nextReductionCall += reduceBase + reduceFactor * (++reductions);
         }
     }
 
     private void onFailure() {
         ContradictionException cex = mSolver.getContradictionException();
         int backtrack_level = analyze(cex, ON_FAILURE);
+        onSolution = false; // to indicate that we are learning on a failure, for #forget()
         int upto = mSolver.getEnvironment().getWorldIndex() - backtrack_level;
         if (upto > 1) {
             mSolver.getMeasures().incBackjumpCount();
@@ -122,14 +140,15 @@ public class LazyClauseGeneration implements Learn {
             extractFromVariables();
             //extractFromDecisions();
 
-            mSat.confl = new Clause(learnt_clause, false /*?*/);
+            mSat.confl = new ArrayClause(learnt_clause, false /*?*/);
             int backtrack_level = analyze(mSolver.getContradictionException().set(Cause.Sat, null, null), ON_SOLUTION);
+            onSolution = true; // to indicate that we are learning on a solution, for #forget()
             int upto = mSolver.getEnvironment().getWorldIndex() - backtrack_level;
             if (upto > 1) {
                 mSolver.getMeasures().incBackjumpCount();
             }
             mSolver.setJumpTo(upto);
-        } // else  always restart on a solution, managed in Solver
+        } // else always restart on a solution, managed in Solver
     }
 
     private void extractFromVariables() {
@@ -194,8 +213,6 @@ public class LazyClauseGeneration implements Learn {
         learnt_clause.resetQuick();
         if (mSat.confl != MiniSat.C_Undef) {
             Clause cl = mSat.confl;
-            level = mSat.findConflictLevel();
-            mSat.cancelUntil(level);
             level = mSat.analyze(cl, learnt_clause);
             if (VERBOSE)
                 System.out.printf("%s learn %s\n",
@@ -217,5 +234,49 @@ public class LazyClauseGeneration implements Learn {
             throw new SolverException("Unexpected contradiction:" + cex);
         }
         return level;
+    }
+
+    private class SortableIntArrayList extends TIntArrayList {
+        Comparator<Integer> comparator;
+
+        public SortableIntArrayList(final boolean sort) {
+            super();
+            if (sort) {
+                comparator = Comparator.comparingInt(a -> mSat.level(MiniSat.var(a)));
+                comparator = comparator.thenComparingInt(i -> i);
+            }
+        }
+
+        public void quicksort(int low, int high) {
+            assert high < this._pos;
+            _quicksort(this._data, low, high);
+        }
+
+        private void _quicksort(int[] tab, int low, int high) {
+            if (low < high) {
+                int pivotIndex = _partition(tab, low, high);
+                _quicksort(tab, low, pivotIndex - 1);
+                _quicksort(tab, pivotIndex + 1, high);
+            }
+        }
+
+        private int _partition(int[] tab, int low, int high) {
+            int pivot = tab[high];
+            int i = low - 1;
+            for (int j = low; j < high; j++) {
+                if (comparator.compare(tab[j], pivot) <= 0) {
+                    i++;
+                    // swap tab[i] and tab[j]
+                    int temp = tab[i];
+                    tab[i] = tab[j];
+                    tab[j] = temp;
+                }
+            }
+            // swap tab[i + 1] and tab[high] (or pivot)
+            int temp = tab[i + 1];
+            tab[i + 1] = tab[high];
+            tab[high] = temp;
+            return i + 1;
+        }
     }
 }

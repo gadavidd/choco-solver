@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.propagation;
@@ -15,6 +12,7 @@ import org.chocosolver.solver.ICause;
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.constraints.Constraint;
 import org.chocosolver.solver.constraints.Propagator;
+import org.chocosolver.solver.constraints.PropagatorPriority;
 import org.chocosolver.solver.exception.ContradictionException;
 import org.chocosolver.solver.exception.SolverException;
 import org.chocosolver.solver.variables.Variable;
@@ -116,7 +114,7 @@ public class PropagationEngine {
      */
     public PropagationEngine(Model model, MiniSat sat) {
         this.model = model;
-        int nbQueues = model.getSettings().getMaxPropagatorPriority() + 1;
+        int nbQueues = PropagatorPriority.VERY_SLOW.getValue() + 1;
         //noinspection unchecked
         this.pro_queue = new CircularQueue[nbQueues];
         for (int i = 0; i < nbQueues; i++) {
@@ -128,7 +126,7 @@ public class PropagationEngine {
         this.propagators = new ArrayList<>();
         //0b00: cstr-ori
         //0b10: var-ori
-        this.hybrid = model.getSettings().enableHybridizationOfPropagationEngine();
+        this.hybrid = model.getSettings().getPropagationEnginType();
         this.sat = sat;
     }
 
@@ -185,16 +183,16 @@ public class PropagationEngine {
         Propagator<?> propagator = propagators.get(i);
         if (propagator.getPriority().getValue() >= pro_queue.length) {
             throw new SolverException(
-                    propagator+
-                    "\nThis propagator declares a priority (" +
-                    propagator.getPriority() + ") whose value (" + propagator.getPriority().getValue() +
-                    ") is greater than the maximum allowed priority (" +
-                    model.getSettings().getMaxPropagatorPriority() +
-                    ").\n" +
-                    "Either increase the maximum allowed priority (`Model model = new Model(Settings.init().setMaxPropagatorPriority(" +
-                    (propagator.getPriority().getValue() + 1) +
-                    "));`)  " +
-                    "or decrease the propagator priority.");
+                    propagator +
+                            "\nThis propagator declares a priority (" +
+                            propagator.getPriority() + ") whose value (" + propagator.getPriority().getValue() +
+                            ") is greater than the maximum allowed priority (" +
+                            PropagatorPriority.VERY_SLOW.getValue() +
+                            ").\n" +
+                            "Either increase the maximum allowed priority (`Model model = new Model(SettingsBuilder.init().setMaxPropagatorPriority(" +
+                            (propagator.getPriority().getValue() + 1) +
+                            "));`)  " +
+                            "or decrease the propagator priority.");
         }
         propagator.setPosition(i);
         return propagator;
@@ -271,24 +269,33 @@ public class PropagationEngine {
         int cw = model.getEnvironment().getWorldIndex(); // get current index
         dynPropagators.descending(cw, consumer);
         while (!awake_queue.isEmpty()) {
-            execute(awake_queue.pollFirst());
+            execute(awake_queue.pollFirst(), false);
         }
     }
 
     /**
-     * Execute 'coarse' propagation on a newly added propagator
-     * or one that should be propagated on backtrack
+     * Execute a propagator immediately, without scheduling it.
+     * If the propagator is stateless, that is, it has not been executed ever, it is set to active first.
+     * Then, if the propagator is active, that is not reified or passive, it is fully propagated.
+     * Finally, if the solver is in LCG mode, the SAT solver is propagated.
      *
      * @param propagator a propagator to propagate
      * @throws ContradictionException if propagation fails
+     * @implSpec In the case the propagator is activated by a reification,
+     * then {@link #onPropagatorExecution(Propagator)} is called after propagation.
      */
-    public void execute(Propagator<?> propagator) throws ContradictionException {
+    public void execute(Propagator<?> propagator, boolean activatedByReification) throws ContradictionException {
         if (propagator.isStateLess()) {
             propagator.setActive();
         }
         if (propagator.isActive()) {
+            // first, fully propagate the propagator
             model.getSolver().getMeasures().incPropagationCount();
             propagator.propagate(PropagatorEventType.FULL_PROPAGATION.getMask());
+            if (activatedByReification) {
+                onPropagatorExecution(propagator);
+            }
+            // then, if required (LCG), propagate the SAT solver
             model.getSolver().getMeasures().incPropagationCount();
             propagateSat();
             while (!var_queue.isEmpty()) {

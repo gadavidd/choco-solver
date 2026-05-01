@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.search.strategy.selectors.variables;
@@ -69,7 +66,7 @@ public class ConflictHistorySearch<V extends Variable>
      * @param seed seed for breaking ties randomly
      */
     public ConflictHistorySearch(V[] vars, long seed) {
-        super(vars, seed, Integer.MAX_VALUE);
+        super(vars, seed, 20);
     }
 
     @Override

@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.constraints;
@@ -462,10 +459,10 @@ public interface IReificationFactory extends ISelf<Model> {
 
 
     /**
-     * Posts one constraint that expresses : (X op C) &hArr; B.
+     * Posts one constraint that expresses: (X op C) &hArr; B.
      *
      * @param X  an integer variable
-     * @param op an operator (allowed: =, !=, <, <=, >, >=)
+     * @param op an operator (allowed: "=", "!=", "<", "<=", ">", ">=")
      * @param C  an int
      * @param B  a boolean variable
      */
@@ -508,15 +505,19 @@ public interface IReificationFactory extends ISelf<Model> {
     }
 
     /**
-     * Posts one constraint that expresses : (X op Y + C) &hArr; B.
+     * Posts one constraint that expresses: (X op Y + C) &hArr; B.
      *
      * @param X  an integer variable
-     * @param op an operator (allowed: =, !=, <, <=, >, >=)
+     * @param op an operator (allowed: "=", "!=", "<", "<=", ">", ">=")
      * @param Y  an integer variable
      * @param C  an int
      * @param B  a boolean variable
      */
     default void reifXrelYC(IntVar X, String op, IntVar Y, int C, BoolVar B) {
+        if (X.isInstantiated()) {
+            reifXrelC(Y, Operator.getFlip(op), X.getValue() - C, B);
+            return;
+        }
         if (Y.isInstantiated()) {
             reifXrelC(X, op, Y.getValue() + C, B);
             return;
@@ -556,10 +557,10 @@ public interface IReificationFactory extends ISelf<Model> {
     }
 
     /**
-     * Posts one constraint that expresses : (X op C) &lArr; B.
+     * Posts one constraint that expresses: (X op C) &lArr; B.
      *
      * @param X  an integer variable
-     * @param op an operator (allowed: =, !=, <, <=, >, >=)
+     * @param op an operator (allowed: "=", "!=", "<", "<=", ">", ">=")
      * @param C  an int
      * @param B  a boolean variable
      */
@@ -597,15 +598,19 @@ public interface IReificationFactory extends ISelf<Model> {
     }
 
     /**
-     * Posts one constraint that expresses : (X op Y + C) &lArr; B.
+     * Posts one constraint that expresses: (X op Y + C) &lArr; B.
      *
      * @param X  an integer variable
-     * @param op an operator (allowed: =, !=, <, <=, >, >=)
+     * @param op an operator (allowed: "=", "!=", "<", "<=", ">", ">=")
      * @param Y  an integer variable
      * @param C  an int
      * @param B  a boolean variable
      */
     default void impXrelYC(IntVar X, String op, IntVar Y, int C, BoolVar B) {
+        if (X.isInstantiated()) {
+            impXrelC(Y, Operator.getFlip(op), X.getValue() - C, B);
+            return;
+        }
         if (Y.isInstantiated()) {
             impXrelC(X, op, Y.getValue() + C, B);
             return;

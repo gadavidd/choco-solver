@@ -1,23 +1,21 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.constraints.checker.explanation;
 
 import org.chocosolver.solver.Model;
 import org.chocosolver.solver.Providers;
-import org.chocosolver.solver.Settings;
+import org.chocosolver.solver.SettingsBuilder;
 import org.chocosolver.solver.constraints.*;
 import org.chocosolver.solver.constraints.binary.*;
 import org.chocosolver.solver.constraints.checker.DomainBuilder;
 import org.chocosolver.solver.constraints.extension.Tuples;
 import org.chocosolver.solver.constraints.extension.TuplesFactory;
 import org.chocosolver.solver.constraints.nary.PropIntValuePrecedeChain;
+import org.chocosolver.solver.constraints.nary.alldifferent.AllDifferent;
 import org.chocosolver.solver.constraints.nary.alldifferent.PropAllDiffAC;
 import org.chocosolver.solver.constraints.nary.alldifferent.PropAllDiffBC;
 import org.chocosolver.solver.constraints.nary.alldifferent.PropAllDiffInst;
@@ -29,11 +27,11 @@ import org.chocosolver.solver.constraints.nary.lex.PropLex;
 import org.chocosolver.solver.constraints.nary.min_max.PropMax;
 import org.chocosolver.solver.constraints.nary.min_max.PropMin;
 import org.chocosolver.solver.constraints.nary.sum.*;
-import org.chocosolver.solver.constraints.reification.PropXeqYHalfReif;
-import org.chocosolver.solver.constraints.reification.PropXinSHalfReif;
-import org.chocosolver.solver.constraints.reification.PropXleYHalfReif;
-import org.chocosolver.solver.constraints.reification.PropXneYHalfReif;
-import org.chocosolver.solver.constraints.ternary.*;
+import org.chocosolver.solver.constraints.reification.*;
+import org.chocosolver.solver.constraints.ternary.PropDivXYZ;
+import org.chocosolver.solver.constraints.ternary.PropMaxBC;
+import org.chocosolver.solver.constraints.ternary.PropMinBC;
+import org.chocosolver.solver.constraints.ternary.PropTimesNaive;
 import org.chocosolver.solver.constraints.unary.*;
 import org.chocosolver.solver.search.SearchState;
 import org.chocosolver.solver.search.loop.learn.LazyClauseGeneration;
@@ -42,12 +40,13 @@ import org.chocosolver.solver.search.strategy.strategy.FullyRandom;
 import org.chocosolver.solver.trace.IMessage;
 import org.chocosolver.solver.variables.BoolVar;
 import org.chocosolver.solver.variables.IntVar;
-import org.chocosolver.solver.variables.SetVar;
+import org.chocosolver.solver.variables.Task;
 import org.chocosolver.solver.variables.Variable;
 import org.chocosolver.util.objects.setDataStructures.iterable.IntIterableRangeSet;
 import org.chocosolver.util.tools.VariableUtils;
 import org.testng.Assert;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Ignore;
 import org.testng.annotations.Test;
 
 import java.lang.annotation.Annotation;
@@ -127,16 +126,21 @@ public class TestExplanation {
                 {PropXeqYHalfReif.class, new Class[]{IntVar.class, IntVar.class, BoolVar.class}, new Object[]{null, null, null}},
                 {PropXneYHalfReif.class, new Class[]{IntVar.class, IntVar.class, BoolVar.class}, new Object[]{null, null, null}},
                 {PropXinSHalfReif.class, new Class[]{IntVar.class, IntIterableRangeSet.class, BoolVar.class}, new Object[]{null, null, null}},
-                {PropXplusYeqZ.class, new Class[]{IntVar.class, IntVar.class, IntVar.class}, new Object[]{null, null, null}},
                 {PropAllDiffInst.class, new Class[]{IntVar[].class}, new Object[]{6}},
                 {PropAllDiffBC.class, new Class[]{IntVar[].class}, new Object[]{6}},
-                {PropAllDiffAC.class, new Class[]{IntVar[].class, boolean.class}, new Object[]{6, false}},
+                {PropAllDiffAC.class, new Class[]{IntVar[].class, AllDifferent.Consistency.class}, new Object[]{6, AllDifferent.Consistency.AC_REGIN}},
+                {PropAllDiffAC.class, new Class[]{IntVar[].class, AllDifferent.Consistency.class}, new Object[]{6, AllDifferent.Consistency.AC_TUNED}},
+                {PropAllDiffAC.class, new Class[]{IntVar[].class, AllDifferent.Consistency.class}, new Object[]{6, AllDifferent.Consistency.AC_CLASSIC}},
+                {PropAllDiffAC.class, new Class[]{IntVar[].class, AllDifferent.Consistency.class}, new Object[]{6, AllDifferent.Consistency.AC_COMPLEMENT}},
+                {PropAllDiffAC.class, new Class[]{IntVar[].class, AllDifferent.Consistency.class}, new Object[]{6, AllDifferent.Consistency.AC_PARTIAL}},
                 {PropLex.class, new Class[]{IntVar[].class, IntVar[].class, boolean.class}, new Object[]{5, 5, null}},
                 {PropElementV_fast.class, new Class[]{IntVar.class, IntVar[].class, IntVar.class}, new Object[]{null, 6, null}},
                 {PropEnumDomainChanneling.class, new Class[]{BoolVar[].class, IntVar.class, int.class}, new Object[]{5, null, null}},
                 {PropInverseChannelBC.class, new Class[]{IntVar[].class, IntVar[].class, int.class, int.class}, new Object[]{6, 6, 1, 1}},
                 {PropInverseChannelAC.class, new Class[]{IntVar[].class, IntVar[].class, int.class, int.class}, new Object[]{6, 6, 1, 1}},
                 {PropIntValuePrecedeChain.class, new Class[]{IntVar[].class, int.class, int.class}, new Object[]{6, 1, 3}},
+                {PropXeqCHalfReif.class, new Class[]{IntVar.class, int.class, BoolVar.class}, new Object[]{null, null, null}},
+                {PropAbsoluteLight.class, new Class[]{IntVar.class, IntVar.class}, new Object[]{null}},
                 //{PropCardinality.class, new Class[]{SetVar.class, IntVar.class}, new Object[]{null, null}}
         };
         return Providers.merge(objs, getSeeds());
@@ -146,6 +150,7 @@ public class TestExplanation {
     public Object[][] getConstraints() {
         Object[][] objs = new Object[][]{
                 {"allDifferent", new Class[]{IntVar[].class}, new Object[]{6}},
+                {"allDifferentExcept0", new Class[]{IntVar[].class}, new Object[]{6}},
                 {"allEqual", new Class[]{IntVar[].class}, new Object[]{6}},
                 {"allEqual", new Class[]{IntVar[].class}, new Object[]{6}},
                 {"among", new Class[]{IntVar.class, IntVar[].class, int[].class}, new Object[]{null, 6, 6}},
@@ -161,6 +166,7 @@ public class TestExplanation {
                 {"circuit", new Class[]{IntVar[].class, int.class}, new Object[]{6, null}},
                 {"count", new Class[]{IntVar.class, IntVar[].class, IntVar.class}, new Object[]{null, 6, null}},
                 {"count", new Class[]{int.class, IntVar[].class, IntVar.class}, new Object[]{null, 6, null}},
+                {"cumulative", new Class[]{Task[].class, IntVar[].class, IntVar.class, boolean.class, boolean.class}, new Object[]{6, 6, null, null, null}},
                 {"decreasing", new Class[]{IntVar[].class, int.class}, new Object[]{6, null}},
                 {"div", new Class[]{IntVar.class, IntVar.class, IntVar.class}, new Object[]{null, null, null}},
                 {"increasing", new Class[]{IntVar[].class, int.class}, new Object[]{6, null}},
@@ -186,7 +192,6 @@ public class TestExplanation {
                 {"times", new Class[]{IntVar.class, int.class, IntVar.class}, new Object[]{null, null, null}},
 
                 //not supported {"allDifferentExcept0", new Class[]{IntVar[].class}, new Object[]{6}},
-                //not supported {"cumulative", new Class[]{IntVar[].class, int[].class, int[].class, int.class}, new Object[]{6, 6, 6, null}},
                 //not supported {"diffN", new Class[]{IntVar[].class, IntVar[].class, IntVar[].class, IntVar[].class, boolean.class}, new Object[]{4, 4, 4, 4, null}},
                 //not supported {"knapsack", new Class[]{IntVar[].class, IntVar.class, IntVar.class, int[].class, int[].class}, new Object[]{4, null, null, 4, 4}},
                 // ignored {"clausesIntChanneling", new Class[]{IntVar.class, BoolVar[].class, BoolVar[].class}, new Object[]{null, 6, 6}},
@@ -229,6 +234,14 @@ public class TestExplanation {
                 } else if (IntVar[].class.isAssignableFrom(parameterType)) {
                     info[i] = 5;
                     classes[i] = "IntVar[].class";
+                    objects[i] = String.valueOf(6);
+                } else if (Task.class.isAssignableFrom(parameterType)) {
+                    info[i] = 5;
+                    classes[i] = "Task.class";
+                    objects[i] = null;
+                } else if (Task[].class.isAssignableFrom(parameterType)) {
+                    info[i] = 5;
+                    classes[i] = "Task[].class";
                     objects[i] = String.valueOf(6);
                 } else if (int.class.isAssignableFrom(parameterType)) {
                     info[i] = null;
@@ -287,6 +300,25 @@ public class TestExplanation {
         mainLooop((l, s) -> buildModel(prop, parameterTypes, info, l, s), seed, Scalar::create);
     }
 
+    @Test(groups = "lcg", dataProvider = "seed")
+    @Ignore(value="for debugging")
+    public void testSinglePropagator(long seed) {
+
+        Class<? extends Propagator<IntVar>> prop = PropDivXYZ.class;
+        Class<?>[] parameterTypes = new Class[]{IntVar.class, IntVar.class, IntVar.class};
+        Object[] info = new Object[]{null};
+
+        boolean isExplained = false;
+        Annotation[] annotations = prop.getAnnotations();
+        for (Annotation annotation : annotations) {
+            if (Objects.equals(annotation.annotationType(), Explained.class)) {
+                isExplained = true;
+            }
+        }
+        Assert.assertTrue(isExplained);
+        mainLooop((l, s) -> buildModel(prop, parameterTypes, info, l, s), seed, Scalar::create);
+    }
+
     @Test(groups = "lcg", timeOut = 60000, dataProvider = "constraints")
     public void testFromFactory(String constraint, Class<?>[] parameterTypes, Object[] info, long seed) {
         mainLooop((l, s) -> buildModel(constraint, parameterTypes, info, l, s), seed, Scalar::create);
@@ -295,7 +327,7 @@ public class TestExplanation {
     @Test(groups = "1s", dataProvider = "seed")
     public void testReifyInS(long seed) {
         mainLooop((l, s) -> {
-            Model model = new Model(Settings.init().setLCG(l));
+            Model model = new Model(SettingsBuilder.init().setLCG(l));
             IntVar x = model.intVar("x", 1, 7);
             IntIterableRangeSet set = new IntIterableRangeSet();
             set.addBetween(2, 5);
@@ -368,7 +400,7 @@ public class TestExplanation {
                              boolean lcg, long seed) {
 
         try {
-            Model model = new Model(prop.getSimpleName(), Settings.init().setLCG(lcg));
+            Model model = new Model(prop.getSimpleName(), SettingsBuilder.init().setLCG(lcg));
             Constructor<?> constructor = prop.getConstructor(parameterTypes);
             Object[] parameters = new Object[parameterTypes.length];
             List<Variable> variables = new ArrayList<>();
@@ -387,7 +419,7 @@ public class TestExplanation {
     private Model buildModel(String method, Class<?>[] parameterTypes, Object[] info, boolean lcg, long seed) {
 
         try {
-            Model model = new Model(method, Settings.init().setLCG(lcg));
+            Model model = new Model(method, SettingsBuilder.init().setLCG(lcg));
             Method m = Model.class.getMethod(method, parameterTypes);
             Object[] parameters = new Object[parameterTypes.length];
             List<Variable> variables = new ArrayList<>();
@@ -441,6 +473,15 @@ public class TestExplanation {
                         variables.add(_variables[j]);
                     }
                     parameters[i] = _variables;
+                } else if (Task[].class == parameterType) {
+                    Task[] _tasks = new Task[(int) info[i]];
+                    for (int j = 0; j < _tasks.length; j++) {
+                        _tasks[j] = DomainBuilder.makeTask(model, rnd, variables.size());
+                        variables.add(_tasks[j].getStart());
+                        variables.add(_tasks[j].getDuration());
+                        variables.add(_tasks[j].getEnd());
+                    }
+                    parameters[i] = _tasks;
                 } else if (int[].class == parameterType) {
                     if (info[i] instanceof Integer) {
                         int[] _constants = new int[(int) info[i]];
@@ -467,6 +508,12 @@ public class TestExplanation {
                     IntVar _variable = DomainBuilder.makeIntVar(model, rnd, variables.size());
                     variables.add(_variable);
                     parameters[i] = _variable;
+                } else if (Task.class == parameterType) {
+                    Task _task = DomainBuilder.makeTask(model, rnd, variables.size());
+                    variables.add(_task.getStart());
+                    variables.add(_task.getDuration());
+                    variables.add(_task.getEnd());
+                    parameters[i] = _task;
                 } else if (Operator.class == parameterType) {
                     parameters[i] = Operator.get((String) info[i]);
                 } else if (IntIterableRangeSet.class == parameterType) {
@@ -477,6 +524,11 @@ public class TestExplanation {
                     } else {
                         parameters[i] = info[i];
                     }
+                }else {
+                    if (info[i] == null) {
+                        throw new UnsupportedOperationException("Unknown value for parameter "+ parameterType);
+                    }
+                    parameters[i] = info[i];
                 }
             }
             i++;
@@ -547,7 +599,7 @@ public class TestExplanation {
     public void testTable2(boolean lcg) {
         // Test bug l.724 in ISatFactory
         // What if the model detects inconsistency during declaration?
-        Model model = new Model(Settings.init().setLCG(lcg));
+        Model model = new Model(SettingsBuilder.init().setLCG(lcg));
         IntVar x = model.intVar("x", 3, 4);
         IntVar y = model.intVar("y", 3, 4);
         Tuples t1 = new Tuples(true);
@@ -561,7 +613,7 @@ public class TestExplanation {
 
     @Test(groups = "lcg", timeOut = 60_000, dataProvider = "trueOrFalse", dataProviderClass = Providers.class)
     public void testDummy1(boolean lcg) {
-        Model model = new Model(Settings.init().setLCG(lcg));
+        Model model = new Model(SettingsBuilder.init().setLCG(lcg));
         IntVar x = model.intVar("x", 3, 4);
         model.member(x, 3, 4).post();
         Assert.assertTrue(model.getSolver().solve());
@@ -571,7 +623,7 @@ public class TestExplanation {
 
     @Test(groups = "lcg", timeOut = 60_000, dataProvider = "trueOrFalse", dataProviderClass = Providers.class)
     public void testDummy3(boolean lcg) {
-        Model model = new Model(Settings.init().setLCG(lcg));
+        Model model = new Model(SettingsBuilder.init().setLCG(lcg));
         IntVar x = model.intVar("x", 3, 4);
         model.member(x, 3, 4).post();
         model.setObjective(true, x);
@@ -583,7 +635,7 @@ public class TestExplanation {
 
     @Test(groups = "lcg", timeOut = 60_000, dataProvider = "trueOrFalse", dataProviderClass = Providers.class)
     public void testNotAllEquals1(boolean lcg) {
-        Model model = new Model(Settings.init().setLCG(lcg));
+        Model model = new Model(SettingsBuilder.init().setLCG(lcg));
         IntVar x = model.intVar("x", 3, 4);
         IntVar y = model.intVar("y", 3, 4);
         model.notAllEqual(x, y).post();
@@ -595,7 +647,7 @@ public class TestExplanation {
 
     @Test(groups = "lcg", timeOut = 60_000, dataProvider = "trueOrFalse", dataProviderClass = Providers.class)
     public void testAtMostNValues(boolean lcg) {
-        Model model = new Model(Settings.init().setLCG(lcg));
+        Model model = new Model(SettingsBuilder.init().setLCG(lcg));
         IntVar[] x = model.intVarArray("x", 3, 2, 4);
         IntVar z = model.intVar("z", 1, 2);
         model.atMostNValues(x, z, true).post();

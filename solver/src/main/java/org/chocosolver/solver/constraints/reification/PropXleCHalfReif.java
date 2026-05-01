@@ -1,10 +1,7 @@
 /*
  * This file is part of choco-solver, http://choco-solver.org/
- *
- * Copyright (c) 2025, IMT Atlantique. All rights reserved.
- *
- * Licensed under the BSD 4-clause license.
- *
+ * Copyright (c) 1999, IMT Atlantique.
+ * SPDX-License-Identifier: BSD-3-Clause.
  * See LICENSE file in the project root for full license information.
  */
 package org.chocosolver.solver.constraints.reification;
@@ -43,7 +40,10 @@ public class PropXleCHalfReif extends Propagator<IntVar> {
 
     @Override
     public int getPropagationConditions(int vIdx) {
-        return IntEventType.INCLOW.getMask();
+        if(vIdx < 1){
+            return IntEventType.INCLOW.getMask();
+        }
+        return IntEventType.INSTANTIATE.getMask();
     }
 
     @Override
@@ -53,11 +53,11 @@ public class PropXleCHalfReif extends Propagator<IntVar> {
             setPassive();
         } else if (b.isInstantiatedTo(1)) {
             // b is not false, so x <= c
-            x.updateUpperBound(c, this, lcg() ? Reason.r(b.getValLit()) : Reason.undef());
+            x.updateUpperBound(c, this, lcg() ? this.r(b.getValLit()) : Reason.undef());
             setPassive();
         } else if (x.getLB() > c) {
             // b must be false
-            b.setToFalse(this, lcg() ? Reason.r(x.getMinLit()) : Reason.undef());
+            b.setToFalse(this, lcg() ? this.r(x.getMinLit()) : Reason.undef());
             setPassive();
         }
     }
